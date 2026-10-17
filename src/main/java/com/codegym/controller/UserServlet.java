@@ -1,3 +1,4 @@
+
 package com.codegym.controller;
 
 import com.codegym.dao.UserDAO;
@@ -64,10 +65,11 @@ public class UserServlet extends HttpServlet {
                 case "test-without-tran":
                     testWithoutTran(request, response);
                     break;
-                    
+
                 case "test-use-tran":
                     testUseTran(request, response);
                     break;
+
                 default:
                     response.sendError(
                             HttpServletResponse.SC_NOT_FOUND
@@ -124,20 +126,20 @@ public class UserServlet extends HttpServlet {
         }
     }
 
-    // Hiển thị danh sách người dùng
+    // Bài 13.5: Hiển thị danh sách bằng Stored Procedure.
     private void listUsers(
             HttpServletRequest request,
             HttpServletResponse response
     ) throws SQLException, ServletException, IOException {
 
-        List<User> users = userDAO.selectAllUsers();
+        List<User> users = userDAO.selectAllUsersStore();
         request.setAttribute("users", users);
 
         request.getRequestDispatcher("/user/list.jsp")
                 .forward(request, response);
     }
 
-    // Tìm kiếm người dùng theo quốc gia
+    // Tìm kiếm người dùng theo quốc gia.
     private void searchUsers(
             HttpServletRequest request,
             HttpServletResponse response
@@ -158,7 +160,7 @@ public class UserServlet extends HttpServlet {
                 .forward(request, response);
     }
 
-    // Sắp xếp người dùng theo tên A-Z
+    // Sắp xếp người dùng theo tên A-Z.
     private void sortUsers(
             HttpServletRequest request,
             HttpServletResponse response
@@ -171,7 +173,7 @@ public class UserServlet extends HttpServlet {
                 .forward(request, response);
     }
 
-    // Hiển thị form thêm người dùng
+    // Hiển thị form thêm người dùng.
     private void showCreateForm(
             HttpServletRequest request,
             HttpServletResponse response
@@ -181,11 +183,11 @@ public class UserServlet extends HttpServlet {
                 .forward(request, response);
     }
 
-    // Hiển thị form sửa người dùng bằng Stored Procedure
+    // Hiển thị form sửa người dùng.
     private void showEditForm(
             HttpServletRequest request,
             HttpServletResponse response
-    ) throws SQLException, ServletException, IOException {
+    ) throws ServletException, IOException {
 
         int id = parseId(request, response);
 
@@ -193,6 +195,7 @@ public class UserServlet extends HttpServlet {
             return;
         }
 
+        // Lấy thông tin User bằng Stored Procedure hiện có.
         User user = userDAO.getUserById(id);
 
         if (user == null) {
@@ -209,7 +212,7 @@ public class UserServlet extends HttpServlet {
                 .forward(request, response);
     }
 
-    // Hiển thị form xác nhận xóa
+    // Hiển thị form xác nhận xóa.
     private void showDeleteForm(
             HttpServletRequest request,
             HttpServletResponse response
@@ -237,7 +240,7 @@ public class UserServlet extends HttpServlet {
                 .forward(request, response);
     }
 
-    // Bài 13.2: Thêm User và phân quyền trong cùng một Transaction
+    // Thêm User và phân quyền trong cùng Transaction.
     private void insertUser(
             HttpServletRequest request,
             HttpServletResponse response
@@ -267,7 +270,8 @@ public class UserServlet extends HttpServlet {
                     );
                 }
 
-                if (permissionIds[i] < 1 || permissionIds[i] > 4) {
+                if (permissionIds[i] < 1
+                        || permissionIds[i] > 4) {
                     throw new SQLException(
                             "Permission không hợp lệ: "
                                     + permissionIds[i]
@@ -283,7 +287,7 @@ public class UserServlet extends HttpServlet {
         redirectToList(request, response);
     }
 
-    // Bài 13.3: Kiểm thử SQL không sử dụng Transaction
+    // Bài 13.3: Kiểm thử SQL không sử dụng Transaction.
     private void testWithoutTran(
             HttpServletRequest request,
             HttpServletResponse response
@@ -291,20 +295,13 @@ public class UserServlet extends HttpServlet {
 
         response.setContentType("text/html;charset=UTF-8");
 
+        userDAO.insertUpdateWithoutTransaction();
+
         try (PrintWriter out = response.getWriter()) {
-            userDAO.insertUpdateWithoutTransaction();
-
-            System.out.println(
-                    "Đã chạy xong hàm testWithoutTran. "
-                    + "Hãy kiểm tra database Employee!"
-            );
-
             out.println("<!DOCTYPE html>");
             out.println("<html lang='vi'>");
-            out.println("<head>");
-            out.println("<meta charset='UTF-8'>");
-            out.println("<title>Kiểm thử SQL</title>");
-            out.println("</head>");
+            out.println("<head><meta charset='UTF-8'>");
+            out.println("<title>Kiểm thử SQL</title></head>");
             out.println("<body>");
             out.println(
                     "<h2>Đã thực thi bài kiểm thử SQL không Transaction.</h2>"
@@ -316,12 +313,11 @@ public class UserServlet extends HttpServlet {
                     "<a href='" + request.getContextPath()
                     + "/users'>Quay về danh sách người dùng</a>"
             );
-            out.println("</body>");
-            out.println("</html>");
+            out.println("</body></html>");
         }
     }
 
-    // Cập nhật người dùng
+    // Bài 13.5: Cập nhật người dùng bằng Stored Procedure.
     private void updateUser(
             HttpServletRequest request,
             HttpServletResponse response
@@ -340,11 +336,20 @@ public class UserServlet extends HttpServlet {
                 request.getParameter("country")
         );
 
-        userDAO.updateUser(user);
+        boolean updated = userDAO.updateUserStore(user);
+
+        if (!updated) {
+            response.sendError(
+                    HttpServletResponse.SC_NOT_FOUND,
+                    "Không tìm thấy người dùng cần cập nhật."
+            );
+            return;
+        }
+
         redirectToList(request, response);
     }
 
-    // Xóa người dùng
+    // Bài 13.5: Xóa người dùng bằng Stored Procedure.
     private void deleteUser(
             HttpServletRequest request,
             HttpServletResponse response
@@ -356,11 +361,20 @@ public class UserServlet extends HttpServlet {
             return;
         }
 
-        userDAO.deleteUser(id);
+        boolean deleted = userDAO.deleteUserStore(id);
+
+        if (!deleted) {
+            response.sendError(
+                    HttpServletResponse.SC_NOT_FOUND,
+                    "Không tìm thấy người dùng cần xóa."
+            );
+            return;
+        }
+
         redirectToList(request, response);
     }
 
-    // Kiểm tra ID đầu vào
+    // Kiểm tra ID đầu vào.
     private int parseId(
             HttpServletRequest request,
             HttpServletResponse response
@@ -388,7 +402,7 @@ public class UserServlet extends HttpServlet {
         }
     }
 
-    // Quay về danh sách sau khi thêm, sửa hoặc xóa
+    // Quay về danh sách sau khi thêm, sửa hoặc xóa.
     private void redirectToList(
             HttpServletRequest request,
             HttpServletResponse response
@@ -399,6 +413,7 @@ public class UserServlet extends HttpServlet {
         );
     }
 
+    // Bài 13.4: Kiểm thử Transaction.
     private void testUseTran(
             HttpServletRequest request,
             HttpServletResponse response
@@ -406,19 +421,23 @@ public class UserServlet extends HttpServlet {
 
         response.setContentType("text/html;charset=UTF-8");
 
-        try (PrintWriter out = response.getWriter()) {
+        try {
             userDAO.insertUpdateUseTransaction();
 
-            out.println("<h3>Transaction thực hiện thành công.</h3>");
-        } catch (SQLException e) {
-            e.printStackTrace();
-
-            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-
             try (PrintWriter out = response.getWriter()) {
-                out.println("<h3>Transaction thất bại.</h3>");
-                out.println("<p>" + e.getMessage() + "</p>");
+                out.println("<!DOCTYPE html>");
+                out.println("<html lang='vi'>");
+                out.println("<meta charset='UTF-8'>");
+                out.println(
+                        "<h3>Transaction thực hiện thành công.</h3>"
+                );
+                out.println("</html>");
             }
+
+        } catch (SQLException e) {
+            throw new IOException(
+                    "Transaction thất bại: " + e.getMessage(), e
+            );
         }
     }
 }

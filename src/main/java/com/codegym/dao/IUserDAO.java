@@ -1,3 +1,4 @@
+
 package com.codegym.dao;
 
 import com.codegym.model.User;
@@ -7,38 +8,41 @@ import java.util.List;
 
 public interface IUserDAO {
 
+    // Bài 13.4: Transaction
     void insertUpdateUseTransaction() throws SQLException;
-    
-    // Thêm người dùng bằng PreparedStatement
+
+    // CRUD bằng PreparedStatement
     void insertUser(User user) throws SQLException;
 
-    // Lấy người dùng theo ID
     User selectUser(int id);
 
-    // Lấy danh sách người dùng
     List<User> selectAllUsers();
 
-    // Xóa người dùng
     boolean deleteUser(int id) throws SQLException;
 
-    // Cập nhật người dùng
     boolean updateUser(User user) throws SQLException;
 
-    // Stored Procedures
+    // Stored Procedures hiện có
     User getUserById(int id);
 
     void insertUserStore(User user) throws SQLException;
 
-    // Tìm kiếm theo quốc gia
+    // Bài 13.5: Stored Procedures cho danh sách, sửa, xóa
+    List<User> selectAllUsersStore() throws SQLException;
+
+    boolean updateUserStore(User user) throws SQLException;
+
+    boolean deleteUserStore(int id) throws SQLException;
+
+    // Tìm kiếm và sắp xếp
     List<User> searchByCountry(String country) throws SQLException;
 
-    // Sắp xếp theo tên
     List<User> sortByName() throws SQLException;
 
-    // JDBC Transaction: thêm User và gán Permission
+    // Transaction: thêm User và gán Permission
     void addUserTransaction(User user, int[] permissionIds)
             throws SQLException;
 
-    // Thực thi SQL không sử dụng Transaction
+    // Bài 13.3: Không sử dụng Transaction
     void insertUpdateWithoutTransaction() throws SQLException;
 }
